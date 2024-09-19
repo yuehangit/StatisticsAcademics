@@ -1,0 +1,583 @@
+---
+title: "A3"
+author: "Yue Han"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(glmnet)
+library(FeatureHashing)
+library(stats)
+```
+
+### Question 1.1
+Suppose $\hat\beta$ is a minimizer of (0.1) and $C=||\hat\beta||_1$ and $\lambda > 0$. Assume minimizer of (0.2) is unique and $\hat\beta$ is not a minimizer of (0.2). If so then there exists an $\alpha$ s.t. $\frac{1}{2n}||Y-X\alpha||^2_2<\frac{1}{2n}||Y-X\hat\beta||^2_2$ where $||\alpha||_1\leq ||\hat\beta||_1$ based on (0.2) however if this is true then this makes $\alpha$ a minimizer of (0.1) and contradicts our supposition that $\hat\beta$ is a minimizer of (0.1). Thus  $\hat\beta$ is a minimizer of (0.2) 
+
+### Question 1.2
+
+let $ \tilde{X} =  \begin{pmatrix} X\\ cI_{p+1} \end{pmatrix} $ where $c> 0$and let $ \tilde{y} =  \begin{pmatrix} y\\ 0_{p+1} \end{pmatrix} $ then 
+$||\tilde{y}-\tilde{X}\beta||^2_2 = ||\begin{pmatrix} y-X\beta\\ c\beta \end{pmatrix}||^2_2 = \sqrt{(y-X\beta)^2 + (c\beta)^2}^2 = |(y-X\beta)^2 + (c\beta)^2| = |(y-X\beta)^2| + |(c\beta)^2| = ||y-X\beta||^2_2 + ||c\beta||^2_2 = ||y-X\beta||^2_2 + c^2||\beta||^2_2 $ so the standard lasso problem becomes $min_\tilde\beta \{\||y-X\beta||^2_2 + c^2||\beta||^2_2 + \tilde\lambda||\beta||_1 \}$ and by making $c = \sqrt{\lambda c}$ and make $\tilde\lambda  = \lambda(1-\alpha)$ we get (0.3) so the optimal value for (0.4) matches (0.3).
+
+### Question 2
+a.)
+$l(\beta) = \Pi^{n}_i p(y_i=x_i|\beta) = \Pi^{n}_i \frac{\beta^{x_i}}{x_i!}e^{-\lambda} =\frac{\beta^{nx_i}e^{-n\beta}}{x_i!}$
+
+b.)
+Want to show $y_i = E_{\hat\beta}[Y|X=x_i] $
+For poisson:
+$E_{\hat\beta}[Y|X=x_i] = \hat\beta(x_i)$
+
+for logisitic:
+$E_{\hat\beta}[Y|X=x_i] = \hat\beta(x_i)$
+
+so  $y_i = E_{\hat\beta}[Y|X=x_i] $ thus 
+$\sum{y_i x_i} = \sum{E_{\hat\beta}[Y|X=x_i]x_i}$
+
+
+
+
+### Question 3.1
+
+Let $x_1$ and $x_2$ be points on hyperplane $\beta ^T x-b =1$ and $\beta ^T x-b =-1$ respectively. Then $x_1 = \frac{1+b}{\beta ^T}$ and $x_2 = \frac{-1+b}{\beta ^T}$. Where $1+b$ and $-1+b$ are constants so $x_1-x_2 =\frac{1+b+1-b}{\beta^T} = \frac{2}{\beta^T}$ is parallel to $\beta$.
+Then the distance can be characterized as $||x_1-x_2||_2 = ||2/\beta^T|| = \frac{2}{||\beta||_2}$ 
+
+
+
+### Question 3.2.a)
+
+We wish to minimize this because we want to maximize the distance between the two hyperplanes
+
+When $y_i = 1$ we have hyperplane $\beta^T x_i -b \geq 1$ and when $y_i = -1$ we have hyperplane $\beta^T x_i -b \leq 1$
+which can be put together to form $y_i(\beta^T x_i -b)\geq 1$
+
+### Question 3.2.b.)
+
+let d = 2 with 3 data points: $([x,x^2],1) , ([x+1,(x+1)^2],1),  ([x+2,(x+2)^2],1)$ then 
+
+### question 3.3
+
+Suppose 0.5 then we can implement 0.6 to minimize 0.5. By adding $C\sum \zeta_i$ we are allowing for a point to be on the wrong side of the hyperplane but since we are limiting $y_i(\beta ^T x_i -b) \geq 1- \zet _i$ we allow a small distance and it still follows the constraint. Thus it allows for a feasible solution. Thus there is a feasible solution that optimizes 0.7
+
+### Question 4
+
+
+```{r}
+load("_data/q1.RData")
+```
+
+
+```{r}
+head(dataTrainAll)
+```
+Region 1 is 11
+Region 3 is 10
+Region 6 is 01
+```{r}
+
+Region0 = as.numeric(dataTrainAll$Region==1 | dataTrainAll$Region==3)
+training = data.frame(Region0)
+Region1 = as.numeric(dataTrainAll$Region==1 | dataTrainAll$Region==6)
+training = cbind(training, Region1)
+head(training)
+```
+City 1 is 10000
+City 2 is 01000
+City 3 is 00100
+City 4 is 00010
+City 5 is 00001
+City 6 is 00000
+```{r}
+City0 = as.numeric(dataTrainAll$City==1)
+City1 = as.numeric(dataTrainAll$City==2)
+City2 = as.numeric(dataTrainAll$City==3)
+City3 = as.numeric(dataTrainAll$City==4)
+City4 = as.numeric(dataTrainAll$City==5)
+training = cbind(training, City0,City1, City2, City3, City4)
+
+```
+
+AdX 1 is 10
+AdX 2 is 01
+AdX 3 is 00
+
+```{r}
+AdX0 = as.numeric(dataTrainAll$AdX==1)
+AdX1 = as.numeric(dataTrainAll$AdX==2)
+training = cbind(training, AdX0, AdX1)
+
+```
+
+
+Domain 5Fa-expoBTTR1m58uG is 1000
+Domain 5KFUl5p0Gxsvgmd4wspENpn is 0100
+Domain trqRTu5Jg9q9wMKYvmpENpn is 0010
+Domain trqRTudNXqN8ggc4JKTI is 0001
+Domain trqRTuT-GNTYJNKbuKz is 0000
+```{r}
+Domain0 = as.numeric(dataTrainAll$Domain=="5Fa-expoBTTR1m58uG")
+Domain1 = as.numeric(dataTrainAll$Domain=="5KFUl5p0Gxsvgmd4wspENpn")
+Domain2 = as.numeric(dataTrainAll$Domain=="trqRTu5Jg9q9wMKYvmpENpn")
+Domain3 = as.numeric(dataTrainAll$Domain=="trqRTudNXqN8ggc4JKTI")
+training = cbind(training, Domain0, Domain1, Domain2, Domain3)
+
+```
+Key_Page 3a7eb50444df6f61b2409f4e2f16b687 is 10
+Key_Page 9f4e2f16b6873a7eb504df6f61b24044 is 01
+Key_Page df6f61b2409f4e2f16b6873a7eb50444 is 00 
+```{r}
+Key_Page0 = as.numeric(dataTrainAll$Key_Page=="3a7eb50444df6f61b2409f4e2f16b687")
+Key_Page1 = as.numeric(dataTrainAll$Key_Page=="9f4e2f16b6873a7eb504df6f61b24044")
+training = cbind(training, Key_Page0, Key_Page1)
+
+```
+
+Ad_Vis 0 is 10
+Ad_Vis 1 is 01
+Ad_Vis 2 is 00
+```{r}
+Ad_Vis0 = as.numeric(dataTrainAll$Ad_Vis==0)
+Ad_Vis1 = as.numeric(dataTrainAll$Ad_Vis==1)
+training = cbind(training, Ad_Vis0, Ad_Vis1)
+
+```
+
+Ad_Form 0 is characterized as 0 and Ad_Form 1 is characterized as 1
+```{r}
+Ad_Form = as.numeric(dataTrainAll$Ad_Form==1)
+training = cbind(training,Ad_Form)
+head(training)
+```
+
+
+
+```{r}
+Ad_Width = (dataTrainAll$Ad_Width - mean(dataTrainAll$Ad_Width))/sd(dataTrainAll$Ad_Width)
+training = cbind(training, Ad_Width)
+```
+
+```{r}
+Ad_Height = (dataTrainAll$Ad_Height - mean(dataTrainAll$Ad_Height))/sd(dataTrainAll$Ad_Height)
+training = cbind(training, Ad_Height)
+```
+
+
+```{r}
+Floor_Price = (dataTrainAll$Floor_Price - mean(dataTrainAll$Floor_Price))/sd(dataTrainAll$Floor_Price)
+training = cbind(training, Floor_Price)
+
+head(training)
+```
+
+```{r}
+Click = as.numeric(dataTrainAll$Click>0)
+Click = data.frame(Click)
+head(Click)
+```
+Question 4.1.a.)
+```{r}
+
+lasso = glmnet(x=data.matrix(training), y=Click$Click, family = binomial, alpha = 1,  standardize=FALSE) #Lasso
+
+ridge = glmnet(x=data.matrix(training), y=Click$Click, family = binomial, alpha = 0,  standardize=FALSE) #Ridge
+
+
+```
+
+
+
+
+
+```{r}
+plot(lasso,label = TRUE)
+
+```
+
+```{r}
+plot(ridge, label =T)
+
+```
+### Question 4.1.b.)
+Lasso plot the most important features are 19 and 20 since they the highest coefficient values throughout the change of L1 norm of lambda
+
+Ridge plot the most important features are 19 and 20 also with the same reason as above. So from both graphs coefficients 19 and 20 are the most important. These two coefficients are Ad_Width and Ad_Height.
+### Question 4.1.c.)
+```{r}
+lasso_cv = cv.glmnet(x=data.matrix(training), y=Click$Click, nfolds = 5, standardize=FALSE, family = "binomial" )
+
+ridge_cv = cv.glmnet(x=data.matrix(training), y=Click$Click, nfolds = 5, standardize=FALSE, family = "binomial")
+```
+
+
+Plot of lasso and ridge binomial deviance against $\log \lambda$ The left most dotted line is the lambda chosen where there is the least binomial deviance. 
+```{r}
+plot(lasso_cv)
+plot(ridge_cv)
+```
+
+```{r}
+lasso_lambda = lasso_cv$lambda.min
+ridge_lambda = ridge_cv$lambda.min
+
+```
+
+
+Plot of lasso with L1 norm chosen labeled we see the most important featues are 19 and 20 and there is plateau of coefficient value for these 2 features after the L1 norm chosen.
+```{r}
+plot(lasso,label = TRUE)
+abline(v=abs(log(lasso_lambda)))
+```
+
+L1 norm chosen is unable to be seen on the plot.
+```{r}
+plot(ridge,label = TRUE)
+abline(v=abs(log(ridge_lambda)))
+```
+
+As we see in both plots only a few features are important so increasing degrees of freedom does not necessarily make cross validation better
+
+### Question 4.2
+
+
+```{r}
+AdX_stand = (dataTrainAll$AdX - mean(dataTrainAll$AdX))/sd(dataTrainAll$AdX)
+iPin_stand = (dataTrainAll$iPinYou_Bid - mean(dataTrainAll$iPinYou_Bid))/sd(dataTrainAll$iPinYou_Bid)
+Comp_stand = (dataTrainAll$Comp_Bid - mean(dataTrainAll$Comp_Bid))/sd(dataTrainAll$Comp_Bid)
+pred_ex = data.frame(cbind(AdX_stand, iPin_stand, Comp_stand))
+head(pred_ex)
+
+
+```
+```{r}
+pred =lm(Comp_stand ~ AdX_stand + iPin_stand, data = pred_ex )
+pred
+```
+
+```{r}
+glm_pred = glmnet(x=data.matrix(pred_ex), y=pred_ex$Comp_stand, lambda = 1,family = "gaussian",standardize = FALSE)
+coef(glm_pred, s= 0.5*sum(abs(coef(pred))))
+```
+
+```{r}
+beta1 = seq(-.5,1,length.out=100)
+beta2 = seq(-.5,1,length.out=100)
+
+```
+
+```{r}
+mse <- function(b1,b2) {
+  m = sum((pred_ex$Comp_stand -(b1*pred_ex$AdX_stand + b2 * pred_ex$iPin_stand))^2)
+  return(m)
+}
+
+mses = NULL
+for (i in 1:length(beta1)){
+  mses = c(mses , mse(beta1[i], beta2[i]))
+
+}
+
+contour(matrix(mses,5,20))
+
+```
+
+
+### Question 5
+```{r}
+grav_data <- read.table("_data/LIGO.Hanford.Data.txt", header = F, col.names = c("time", "strain"))
+head(grav_data)
+```
+
+```{r}
+set.seed(10)
+glm_time = glmnet(x=data.matrix(grav_data), y=grav_data$time, lambda = 1,family = "gaussian",standardize = FALSE)
+cv_time = cv.glmnet(x=data.matrix(grav_data), y=grav_data$time, nfolds = 10, family = "gaussian")
+lambda_time = cv_time$lambda.min
+
+```
+$\hat w$ is more sparse because it is lasso which is know for sparcity.
+
+### Question 6
+```{r, message=FALSE, warning=FALSE}
+library(png)
+```
+
+```{r}
+
+rand_pos = paste("_data/pngdata/pos/",as.character(sample(1:500,1)), ".png", sep="")
+rand_neg = paste("_data/pngdata/neg/",as.character(sample(1:500,1)), ".png", sep="")
+
+pos = readPNG(rand_pos)
+neg = readPNG(rand_neg)
+
+
+```
+
+```{r}
+writePNG(pos, target = "posOrg.png")
+writePNG(neg, target = "negOrg.png")
+```
+
+![Pos Image Original](posOrg.png)
+
+
+
+![Neg Image Original](negOrg.png)
+
+
+
+
+```{r}
+source("_data/functions.R")
+
+
+```
+
+
+
+```{r, message=FALSE, warning=FALSE}
+pos = rgb2gray(pos)
+neg = rgb2gray(neg)
+
+writePNG(pos, target = "posGray.png")
+writePNG(neg, target = "negGray.png")
+```
+
+![Pos Image rgb2gray](posGray.png)
+
+![Neg Image rgb2gray](negGray.png)
+
+
+```{r, message=FALSE, warning=FALSE}
+neg = crop.r(neg, 160,96)
+
+writePNG(neg, target = "negCrop.png")
+```
+![Neg Image Cropped](negCrop.png)
+
+
+```{r, message=FALSE, warning=FALSE}
+gField_pos = grad(pos,128,64,F)
+gField_neg = grad(neg,128,64,F)
+
+
+setEPS()
+postscript("gPos.eps")
+g_Pos=grad(pos, 128, 64, T)
+dev.off()
+
+setEPS()
+postscript("gNeg.eps")
+g_Neg=grad(neg, 128, 64, T)
+dev.off()
+
+
+
+```
+
+
+
+
+```{r}
+hog_pos = hog(gField_pos$xgrad, gField_pos$ygrad,4,4,6)
+hog_neg = hog(gField_neg$xgrad, gField_neg$ygrad,4,4,6)
+
+hog_pos #Pos image after hog
+```
+
+```{r}
+hog_neg #neg image after hog
+```
+### Question 6 Part I b.)
+
+```{r}
+features = data.frame()
+
+dir_pos = dir("_data/pngdata/pos")
+dir_neg = dir("_data/pngdata/neg")
+for (i in 1:length(dir_pos)) {
+  rand_pos = paste("_data/pngdata/pos/",dir_pos[i], sep="")
+  rand_neg = paste("_data/pngdata/neg/",dir_neg[i], sep="")
+  pos = readPNG(rand_pos)
+  neg = readPNG(rand_neg)
+  pos = rgb2gray(pos)
+  neg = rgb2gray(neg)
+  neg = crop.r(neg, 160,96)
+  gField_pos = grad(pos,128,64,F)
+  gField_neg = grad(neg,128,64,F)
+  feature = hog(gField_pos$xgrad, gField_pos$ygrad,4,4,6)
+  pos_row = cbind(rbind(feature), "POS")
+  feature = hog(gField_neg$xgrad, gField_neg$ygrad,4,4,6)
+  neg_row = cbind(rbind(feature), "NEG")
+  features  = rbind(features, pos_row, neg_row)
+}
+
+colnames(features)[97]<- "Human"
+head(features)
+
+#length(dir_pos)
+#change it so the rows have a good name
+```
+
+
+### Question 6 Part II.)
+
+```{r}
+glm_png = glmnet(x=data.matrix(features[1:length(features)-1]), y=features$Human, family = "binomial")
+
+plot(glm_png)
+```
+
+
+```{r}
+cv_png = cv.glmnet(x=data.matrix(features[1:length(features)-1]), y=features$Human, family = "binomial", type.measure="class")
+
+plot(cv_png)
+```
+
+### Question 7 a.)
+
+```{r}
+load("_data/Amazon_SML.RData")
+```
+
+Column names are name, review and rating
+```{r}
+colnames(dat)
+```
+there are 1312 reviews
+```{r}
+nrow(dat[is.null(dat$review)])
+
+```
+There are 20 unique products
+```{r}
+length(unique(dat$name))
+```
+
+```{r}
+library(dplyr)
+```
+
+
+Vulli Sophie the Giraffe Teether has the most 5 ratings at 526 5 star ratings
+```{r}
+dat %>%
+  group_by(name) %>% 
+  filter(rating ==5) %>% 
+  summarise(n = n()) %>% 
+  filter(n == max(n))
+```
+Most 1 star ratings
+```{r}
+dat %>%
+  group_by(name) %>% 
+  filter(rating ==1) %>% 
+  summarise(n = n()) %>% 
+  filter(n == max(n))
+```
+### Question 7b.)
+Amount for each rating
+```{r}
+am = dat %>%
+  group_by(rating) %>% 
+  summarise(n = n())
+am
+```
+The best performance of a constant classifier is 1/2
+```{r}
+source("_data/tdMat.R")
+
+```
+
+### Question 7c.)
+```{r}
+source("_data/splitData.R")
+```
+
+Below are the amount of covariates with non-zero coefficients, 20 most negative words and 20 most positive words
+```{r}
+set.seed(10)
+lambda<-exp(seq(-20, -1, length.out = 99))
+cvfit<-cv.glmnet(train.x,train.y,family="binomial",type.measure="class",lambda=lambda)
+
+lambda1se = cvfit$lambda.1se
+
+glmfit = glmnet(x=train.x, y=train.y, lambda = lambda1se,family = "binomial",type.measure="class")
+
+cft = coef(glmfit, s=lambda1se)
+glmfit$df # amount of covariates with non-zero coefficients
+cft[order(cft[,1])[1:20],0] #20 most negative words
+cft[order(-cft[,1])[1:20],0] #20 most positive words
+```
+
+### Question 7 d.)
+These two words are (from most negaive to most positive)
+```{r}
+cft = cbind(coef(glmfit, s=lambda1se))
+row.names(cft)[order(cft[,1])[1]]
+row.names(cft)[order(-cft[,1])[1]]
+```
+
+```{r}
+head(train.tag)
+```
+
+missclassification rate is 0.1515
+```{r}
+set.seed(10)
+lambda_t<-exp(seq(-20, -1, length.out = 99))
+cvfit_tst<-cv.glmnet(test.x,test.y,family="binomial",type.measure="class",lambda=lambda_t)
+
+lambda1se_tst = cvfit_tst$lambda.1se
+
+glmfit_tst = glmnet(x=test.x, y=test.y, lambda = lambda1se_tst,family = "binomial",type.measure="class")
+
+cvfit_tst
+```
+
+It is better than the misclassifiction error before.
+
+
+### Question 8 a.)
+
+```{r}
+heart = read.csv("_data/framingham.csv")
+head(heart)
+```
+From summary the significant variables are age, cigsPerDay, sysBP and glucose
+```{r}
+heart_fit = glm(TenYearCHD ~ ., data = heart, family = "binomial")
+summary(heart_fit)
+```
+Question 7 Part 2
+
+```{r}
+set.seed(100)
+size = nrow(heart)/5
+smple = sample(nrow(heart),size = size, replace = FALSE)
+heart_test = heart[smple,]
+heart_train = heart[-smple,]
+head(heart_test)
+head(heart_train)
+```
+
+```{r}
+fit_h_train = glm(TenYearCHD ~ ., data = heart_train, family = "binomial")
+probs = fit_h_train %>% predict(heart_test, type = "response")
+pred = na.omit(ifelse(probs > 0.5, 1, 0))
+1-mean(pred == heart_test$TenYearCHD) #misclassification error
+```
+
+The curve is sort of a U curve however it seems there is  plateau of the misclassification error at lambda > ~  -3.5 so we do not need to use regularization
+```{r}
+heart = na.omit(heart)
+heart_glm =  glmnet(x = data.matrix(heart[1: ncol(heart)-1]),y =heart$TenYearCHD, family = binomial, lambda = 1)
+heart_glm
+heart_cv = cv.glmnet(x=data.matrix(heart[1: ncol(heart)-1]), y=heart$TenYearCHD, nfolds = 5, lamda = 1, type.measure="class", family = "binomial")
+plot(heart_cv)
+```
+
