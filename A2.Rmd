@@ -1,0 +1,433 @@
+---
+title: "A2"
+author: "Yue Han"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+```
+
+### Question 1
+```{r}
+housing <- read.csv("housingprice.csv")
+head(housing)
+```
+### 1 a.)
+```{r}
+housing$zipcode <- as.factor(housing$zipcode)
+head(housing)
+```
+
+
+
+```{r}
+p_mean <- aggregate(housing$price, list(housing$zipcode), mean)
+p_mean = p_mean[order(-p_mean$x),]
+head(p_mean)
+```
+The most expensive average price zipcodes are 98039, 98004 and 98040
+```{r}
+top1 = housing[housing$zipcode == p_mean$Group.1[1],]
+top2 = housing[housing$zipcode == p_mean$Group.1[2],]
+top3 = housing[housing$zipcode == p_mean$Group.1[3],]
+p_mean[1:3,] #three highest average price zipcodes in order from most to third most and their corresponding average prices
+```
+
+```{r}
+boxplot(top1$price) #most expensive average price for zipcode 
+boxplot(top2$price) #2nd most expensive average price for zipcode
+boxplot(top3$price) #3rd most expensive average price for zipcode
+```
+
+### 1 b.)
+
+From the plot we can see that as sqft_living increases so does the price
+```{r}
+plot(housing$sqft_living, housing$price)
+```
+
+### 1 c.)
+
+```{r}
+train <- read.csv("train.data.csv")
+head(train)
+test <- read.csv("test.data.csv")
+head(test)
+```
+For training data
+The $R^2=0.5101$
+```{r}
+train_price = lm(price ~ bedrooms + bathrooms + sqft_living + sqft_lot, data = train)
+summary(train_price)
+```
+For testing data
+$R^2=0.5054$
+```{r}
+test_price = lm(price ~ bedrooms + bathrooms + sqft_living + sqft_lot, data = test)
+summary(test_price)
+
+```
+
+d.) 
+Training data we have
+$R^2=0.5163$
+```{r}
+train_price_z = lm(price ~ bedrooms + bathrooms + sqft_living + sqft_lot + zipcode, data = train)
+summary(train_price_z)
+```
+For testing data we have
+$R^2=0.5124$
+
+```{r}
+test_price_z = lm(price ~ bedrooms + bathrooms + sqft_living + sqft_lot + zipcode, data = test)
+summary(test_price_z)
+```
+
+e.)
+
+The predicted price is $15642273
+```{r}
+fancy <- read.csv("fancyhouse.csv")
+head(fancy)
+
+predict(train_price_z, fancy)
+```
+Below we see the most expensive houses in the data we have
+```{r}
+head(housing[order(-housing$price),])
+```
+The most expensive house is just 7700000. The most expensive house with the same zipcode is $6885000. Bill gate's house has more than 5 times the sqft_living, more than 7 times the sqft_lot and more than 3 times the amount of bathrooms. For it being just 2.271935 times more expensive than the 6885000 dollar home seems unreasonable. Especially since we know from the scatter plot that more sqft_living means more pricey and that the zipcode has the highest price.
+
+f.)
+$\hat \beta _1 = argmin_{\beta \in R^{d+1}} ||Y-X_1\beta||^2_2 = argmin_{\beta \in R^{d+1}} (\sqrt{\sum_{i=1}^{n}(y_i-\beta W_i -\beta x_{id})^2})^2 = argmin_{\beta \in R^{d+1}} \sum_{i=1}^{n}(y_i-\beta W_i -\beta x_{id})^2$ Where $W_i$ is the ith row of $X$
+
+$\hat \beta  = argmin_{\beta \in R^{d+1}} ||Y-X\beta||^2_2 = argmin_{\beta \in R^{d+1}} (\sqrt{\sum_{i=1}^{n}(y_i-\beta W_i )^2})^2 = argmin_{\beta \in R^{d+1}} \sum_{i=1}^{n}(y_i-\beta W_i )^2$
+
+So we have
+$||Y-X\hat\beta||^2_2 = ||Y-X(argmin_{\beta \in R^{d+1}} \sum_{i=1}^{n}(y_i-\beta W_i )^2)||^2_2 = \sum_i^n y_i-W_i(argmin_{\beta \in R^{d+1}} \sum_{i=1}^{n}(y_i-\beta W_i )^2)$
+
+and 
+
+$||Y-X_1\hat\beta_1||^2_2 = ||Y-X_1(argmin_{\beta \in R^{d+1}} (\sum_{i=1}^{n}y_i-\beta W_i -\beta x_{id})^2)||^2_2  = \sum_i^n y_i-W_i(argmin_{\beta \in R^{d+1}} (\sum_{i=1}^{n}y_i-\beta W_i -\beta x_{id})^2) - x_{id}(argmin_{\beta \in R^{d+1}} (\sum_{i=1}^{n}y_i-\beta W_i -\beta x_{id})^2)$
+
+We want the smaller of the two and we can see that by adding a covariate $||Y-X_1\hat\beta_1||^2_2 \leq ||Y-X\hat\beta||^2_2 $ because if it is larger it will just assign a 0 to the estimated coefficient. We want the smaller one because it is the $SS_{res}$ and minimizing $SS_{res}$ maximizes $R^2$ since $SS_{tot} = SS_{res} + SS_{reg}$ and $R^2 = \frac{SS_{reg}}{SS_{tot}}$
+
+
+### Question 2
+Below is the results for training data
+$R^2 = 0.5224$
+```{r}
+summary(lm(price ~ bedrooms + bathrooms + sqft_living + sqft_lot + zipcode + bedrooms * bathrooms, data = train))
+```
+
+Below is for the testing data
+$R^2 = 0.517$
+```{r}
+summary(lm(price ~ bedrooms + bathrooms + sqft_living + sqft_lot + zipcode + bedrooms * bathrooms, data = test))
+```
+
+2b.)
+We can add condition as another feature. As we can see below it increases the $R^2$ to 0.5266
+```{r}
+summary(lm(price ~ bedrooms + bathrooms + sqft_living + sqft_lot + zipcode + bedrooms * bathrooms + condition, data = test))
+```
+2c.)
+Below are the results for training data
+$R^2 = 0.5423$
+```{r}
+summary(lm(price ~ poly(bedrooms,2) + poly(bathrooms,3) + sqft_living + sqft_lot + zipcode, data = train))
+```
+
+Below are the results for testing data
+$R^2 = 0.5296$
+```{r}
+summary(lm(price ~ poly(bedrooms,2) + poly(bathrooms,3) + sqft_living + sqft_lot + zipcode, data = test))
+```
+
+### Question 3
+
+3 Part 1.)
+```{r}
+wine <- read.csv("wine.csv")
+head(wine)
+```
+
+```{r}
+ggplot(wine, aes(x =AGST, y=Price)) +
+  geom_point(size=2, shape=1)
+```
+
+```{r}
+ggplot(wine, aes(x =WinterRain, y=Price)) +
+  geom_point(size=2, shape=1)
+```
+
+```{r}
+ggplot(wine, aes(x =HarvestRain, y=Price)) +
+  geom_point(size=2, shape=1)
+```
+
+```{r}
+ggplot(wine, aes(x =Age, y=Price)) +
+  geom_point(size=2, shape=1)
+```
+The variable most correlated with price based on the scatterplots is AGST since compared to the other graphs, there is a clear increase of price as AGST increases.
+
+Pearson's correlation for AGST is the highest. It is 0.6595629 so about 0.66. Therefore my observation is justified.
+```{r}
+cor(wine$Price, wine$AGST)
+cor(wine$Price, wine$WinterRain)
+cor(wine$Price, wine$HarvestRain)
+cor(wine$Price, wine$Age)
+```
+Part 2
+$R^2 = 0.435$
+Coefficient for intercept is -3.4178 and coefficient for AGST is 0.6351
+```{r}
+summary(lm(Price~AGST, data = wine))
+```
+
+3 Part 3
+```{r}
+wine_test <- read.csv("winetest.csv")
+head(wine_test)
+```
+
+
+For training data with AGST, HarvestRain as covariates we have $R^2=0.7074$
+```{r}
+summary(lm(Price~AGST + HarvestRain , data = wine))
+```
+For testing data with AGST and HarvestRain as covariates we have $R^2=-2.503339$
+
+
+```{r}
+fit = lm(Price~ AGST  + HarvestRain, data = wine)
+pred = predict(fit, wine_test)
+1 - sum(( pred-wine_test$Price )^2) / sum(( mean( wine_test$Price )- wine_test$Price )^2)
+```
+For training data with AGST, Age and HarvestRain as covariates we have $R^2=0.79$
+```{r}
+summary(lm(Price~AGST + Age + HarvestRain, data = wine))
+```
+
+For testing data with AGST Age and HarvestRain as covariates we have $R^2=-0.5080824$
+
+
+
+
+```{r}
+fit = lm(Price~ AGST + Age + HarvestRain, data = wine)
+pred = predict(fit, wine_test)
+1 - sum(( pred-wine_test$Price)^2)/sum(( mean(wine_test$Price)- wine_test$Price )^2)
+```
+
+For training data with AGST HarvestRain Age and WinterRain as covariates we have $R^2=0.75374$
+```{r}
+fit = lm(Price~AGST + HarvestRain + Age + WinterRain, data = wine)
+summary(fit)
+```
+For Testing data we have $R^2=0.3343905$
+
+```{r}
+pred = predict(fit, wine_test)
+1 - sum(( pred-wine_test$Price )^2)/ sum(( mean( wine_test$Price )- wine_test$Price )^2)
+```
+For training data with AGST Age HarvestRain WinterRain FrancePOp as covariates we have $R^2=0.8294$
+```{r}
+fit = lm(Price~AGST + Age +HarvestRain + WinterRain + FrancePop, data = wine)
+summary(fit)
+```
+For Testing data we have $R^2=0.2120672$
+
+```{r}
+pred = predict(fit, wine_test)
+1 - sum((pred - wine_test$Price)^2)/ sum(( mean( wine_test$Price) - wine_test$Price )^2)
+
+```
+Based on what we did above, the best $R^2$ for testing data is 0.3343905 so we use that model. That model is the one with AGST, HarvestRain, Age, WinterRain
+### Question 4
+
+4 Part 1
+```{r}
+baseball <- read.csv("baseball.csv")
+head(baseball)
+```
+Histogram for OBP (on-base percentage) has a non-skewed distribuiton as the distribution is centralized and no side overpowers the other
+```{r}
+ggplot(baseball, aes(x=OBP),) + geom_histogram(bins =20)
+```
+Boxplot for OBP (on-base percentage) median is centralized and the whiskers are equidistant from the median
+```{r}
+ggplot(baseball, aes(y=OBP),) + geom_boxplot()
+```
+Mean for OBP (on-base percentage) is 0.3263312 and median is 0.326 which is around the same so the distribution is not skewed
+```{r}
+mean(baseball$OBP)
+median(baseball$OBP)
+```
+
+Histogram for SLG (slugging percentage) has non-skewed distribution as the distribution is centralized and no side overpowers the other.
+```{r}
+ggplot(baseball, aes(x=SLG),) + geom_histogram(bins =20)
+```
+boxplot for SLG (slugging percentage)
+
+We see from the boxplot that the distribution is not skewed as the median is central. 
+```{r}
+ggplot(baseball, aes(y=SLG),) + geom_boxplot()
+```
+The mean SLG is 0.3973417 and median is 0.396 which is around the same so we see that the distribution is not skewed
+```{r}
+mean(baseball$SLG)
+median(baseball$SLG)
+```
+
+Histogram for BA (batting average) we see that the distribution is not skewed as the histogram is centralized and no one side overpowers the other.
+```{r}
+ggplot(baseball, aes(x=BA),) + geom_histogram(bins =20)
+```
+Boxplot for BA (batting average) distribution is not skewed as the median is centralized and the whiskers are equidistant from the median
+```{r}
+ggplot(baseball, aes(y=BA),) + geom_boxplot()
+```
+
+The mean for BA is 0.2592727 and median is 0.26 which is very close thus showing distribution not skewed
+```{r}
+mean(baseball$BA)
+median(baseball$BA)
+```
+
+4 Part 2
+
+Marginally regressing RS on BA we have intercept -805.51 and coefficient for BA to be 5864.84. The $R^2$ is 0.6839
+```{r}
+RS_BA =lm(RS~BA, data = baseball )
+summary(RS_BA)
+```
+
+Scatterplot of RS and BA. We see that it follows the fitted line decently close thus showing it is not skewed and therefore the model is reasonable
+```{r}
+ggplot(baseball, aes(x =BA, y=RS)) +
+  geom_point(size=2, shape=1) + geom_smooth(method = "lm", se = FALSE)
+```
+qqplot of fitted residuals RS and BA follows a straight line and only some points at the tails deviate from it thus showing it is not skewed thus reasonable model.
+
+```{r}
+qqnorm(RS_BA$residuals,ylab="Standardized Residuals" ,xlab="Theoretical Quantiles lm(RS ~ BA)")
+```
+Marginally regressing RS on OBP we get -1076.6 for intercept and 5490.4 for OBP coefficient. While $R^2$ is 0.8109 which is higher than the BA marginal regression model
+```{r}
+RS_OBP =lm(RS~OBP, data = baseball )
+summary(RS_OBP)
+```
+
+Scatterplot of RS and OBP. We see that the points follow the fitted line quite close thus showing it is not skewed thus a good model. We also see the points hug the fitted line more than the one from the marginal regression of BA
+```{r}
+ggplot(baseball, aes(x =OBP, y=RS)) +
+  geom_point(size=2, shape=1) + geom_smooth(method = "lm", se = FALSE)
+```
+qqplot of fitted residuals RS and OBP. We see that the qqplot follows a straight line that has on a few deviations from the line at that tail thus showing it is not skewed. Therefore the model is reasonable. We also see that the qqplot is more straight than the qqplot of BA.
+
+```{r}
+qqnorm(RS_OBP$residuals,ylab="Standardized Residuals" ,xlab="Theoretical Quantiles lm(RS ~ OBP)")
+```
+
+
+Marginally regressing RS on SLG
+intercept is -289.37 and slope is 2527.92 
+$R^2 = 0.8441$ which is higher than the $R^2$ for BA
+```{r}
+RS_SLG =lm(RS~SLG, data = baseball )
+summary(RS_SLG)
+```
+
+Scatterplot of RS and SLG. The scatterplot follows the fitted line quite well thus showing it is not skewed and the model is reasonable. Also the points hug the fitted line better thant the marginal regression with BA
+```{r}
+ggplot(baseball, aes(x =SLG, y=RS)) +
+  geom_point(size=2, shape=1) + geom_smooth(method = "lm", se = FALSE)
+```
+qqplot of fitted residuals RS and SLG. We see that the qqplot follows a straight 45 degree line well which shows it is not skewed and the model is reasonable. We see only a few tail points that do not follow the straight line but it is still better than the marginal regression on BA
+
+```{r}
+qqnorm(RS_SLG$residuals,ylab="Standardized Residuals" ,xlab="Theoretical Quantiles lm(RS ~ SLG)")
+```
+Thus we see from the scatterplots qqplots and $R^2$ that BA is not the best choice. Rather, SLG and OBP seem to perform better
+
+
+4 Part 3
+For model lm(RS~BA +SLG + OBP) we have $R^2 = 0.9249$ which is even better than all the marginal regression models We have -806.08 for intercept -134.90 for BA coefficient, 1533.88 for SLG coefficient and 2900.94 for OBP coefficient. We see that SLG and OBP have a significant positive relationship in our model while BA does not. From part two the coefficient for BA was 5864.84 which is much higher. So it is not consistent with part two however our observation that OBP and SLG were more correlated with RS from part 2 seems to match what we have in this model.
+```{r}
+RS_all = lm(RS~BA +SLG +OBP, data = baseball)
+summary(RS_all)
+
+```
+We see from qqplot that it is not skewed as the standardized residuals follow a line with only a few points at the tail that don't.
+```{r}
+qqnorm(RS_all$residuals,ylab="Standardized Residuals" ,xlab="Theoretical Quantiles lm(RS ~ BA + SLG + OBP)")
+```
+
+For model lm(RS~BA +SLG) we have $R^2 = 0.8711$. Intercept is -551.08, BA coefficient is 1904.66 and SLG coefficient is 1943.77. The $R^2$ is smaller than 0.9249 which was the $R^2$ from the previous model. Thus based on the $R^2$ I would prefer the previous model more.
+```{r}
+RS_BA_SLG = lm(RS~BA +SLG , data = baseball)
+summary(RS_BA_SLG)
+```
+
+
+4 Part 4
+
+```{r}
+predict_data = (baseball[baseball$Year<2002 & baseball$Team == "OAK",])
+RD = predict_data$RS-predict_data$RA
+predict_data = cbind(predict_data, RD)
+head(predict_data)
+```
+
+```{r}
+W_RD = lm(W~RD, data= predict_data)
+summary(W_RD)
+```
+
+```{r}
+RS_OBP_SLG = lm(RS~OBP+SLG, data=predict_data)
+summary(RS_OBP_SLG)
+```
+
+```{r}
+RA_OOBP_OSLG = lm(RA~OOBP + OSLG, data=predict_data)
+summary(RA_OOBP_OSLG)
+```
+
+```{r}
+W_RD_int = 81.667331
+RD = 0.100932
+
+RS_OBP_SLG_int = -949.2
+OBP = 3332.3
+SLG = 1499.2
+
+  
+RA_OOBP_OSLG_int = -910.5 
+OOBP = -1556.5
+OSLG = 5354.8 
+
+#values we predicted for 2002
+OBP_2002 =  0.349
+SLG_2002 = 0.430
+OOBP_2002 = 0.307
+OSLG_2002 = 0.373
+
+form = W_RD_int + RD*((RS_OBP_SLG_int + OBP*OBP_2002 + SLG* SLG_2002)-(RA_OOBP_OSLG_int+OOBP *OOBP_2002 + OSLG*OSLG_2002))
+
+form
+```
+We get 106.8432 wins which is close to the actual result of 103
+```{r}
+(baseball[baseball$Year==2002 & baseball$Team == "OAK",])
+```
+
