@@ -1,0 +1,455 @@
+---
+title: "A1 STAD80"
+author: "Yue Han"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+
+```
+Question 1
+
+1.1
+B,C,D
+B: Counter example, if $X_i$ i.i.d. Cauchy distribution does not have finite variance
+
+
+1.2
+A,B,C, E
+
+1.3
+C
+
+1.4
+A
+
+1.5
+A,D
+
+1.6
+A
+
+Question 2
+Part 1
+
+Using Slutsky's theorem
+
+$\sqrt n(\hat\theta_n - \theta) \underrightarrow{D} N(0, \frac{1}{I(\theta)})$ and $\sqrt {I(\hat\theta_n)} \underrightarrow{P} \sqrt{I(\theta)}$ using Continuous Mapping theorem. Then $\sqrt{n}(\hat\theta-\theta)\sqrt{I(\hat\theta_n)} \underrightarrow{D} \sqrt{I(\theta_n)} N(0,\frac{1}{I(\theta)}) = N(0,1)$
+
+$P[z(\frac{1-\alpha}{2})\leq \sqrt{nI(\theta_n)}(\hat\theta -\theta) \leq z(\frac{1+\alpha}{2}) \geq 1-\alpha$
+
+$\implies P[\frac{z(\frac{1-\alpha}{2})}{\sqrt{nI(\hat\theta_n)}} \leq \theta \leq \frac{z(\frac{1+\alpha}{2})}{\sqrt{nI(\hat\theta_n)}} ]\geq 1-\alpha$
+
+$\implies P[\hat\theta_n - \frac{z_\alpha}{\sqrt{nI(\hat\theta_n)}} \leq \theta \leq \hat\theta + \frac{z_\alpha}{\sqrt{nI(\hat\theta_n)}}]$
+
+$\implies C_n = [\hat\theta_n - \frac{z_\alpha}{\sqrt{nI(\hat\theta_n)}} ,  \hat\theta + \frac{z_\alpha}{\sqrt{nI(\hat\theta_n)}}]$
+
+Part 2
+
+a.)
+For $x\geq1, \theta>1$
+$L(\theta) = \Pi_{i=1}^np(X-x_i|\theta) = (\theta-1)^n\Pi_{i=1}^n X_i^{-\theta}$
+
+$l(\theta)=n\ln(\theta-1)+\sum_{i=1}^nX_i^{-\theta} = n\ln(\theta-1)-\theta\sum_{i=1}^n\ln X_i$
+
+$l'(\theta)=\frac{n}{\theta-1}-\sum_{i=1}^n \ln X_i$
+
+$l'(\theta)= 0 \iff \frac{n}{\theta-1}=\sum_{i=1}^n \ln X_i$
+
+$\iff \frac{n}{\sum_{i=1}^n \ln X_i}+1 =\hat\theta_{MLE}$
+
+verify $l''(\theta) <0$
+
+$l''(\theta) = \frac{n}{(\theta-1)^2} < 0 $ since $n > 0$ and $(\theta-1)^2 >0$
+
+therefore it is valid
+
+b.)
+$I(\theta) = E_\theta(-\frac{\delta}{\delta \theta^2}\log P_\theta(X)) P_\theta(X) \delta x$
+
+
+$=\int_{x\geq1}(\frac{\delta}{\delta \theta^2} \log (\theta-1)-\theta \log x)(\theta-1)x^{-\theta}\delta x$
+
+$=-\int_{x\geq1} (\frac{\delta}{\delta \theta} \frac{1}{\theta-1}-logx)(\theta-1)x^{-\theta}\delta x$
+
+$=-\int_{x\geq1} -\frac{1}{(\theta-1)^2} (\theta-1)x^{-\theta}\delta x$
+
+$=-\int_{x\geq1} -\frac{1}{(\theta-1)} x^{-\theta}\delta x$
+
+$=\frac{1}{(\theta-1)}\int_{x\geq1}  x^{-\theta}\delta x$
+
+$=\frac{1}{(\theta-1)^2}$
+
+The asymptotic variance in terms of $\theta$ is $I^{-1}(\theta)/n = (\theta-1)^2/n = \frac{n}{\sum_{i=1}^n \ln Xi}$
+
+c.) $C_n = [\hat\theta_n - \frac{z_\alpha}{\sqrt{nI(\hat\theta_n)}} ,  \hat\theta + \frac{z_\alpha}{\sqrt{nI(\hat\theta_n)}}]$
+
+$= [\frac{n}{\sum_{i=1}^n \ln Xi} + 1 - \frac{0.975\sqrt{\sum_{i=1}^n \ln Xi}}{n} , \frac{n}{\sum_{i=1}^n \ln Xi} + 1 + \frac{0.975\sqrt{\sum_{i=1}^n \ln Xi}}{n}]$
+
+d.)
+```{r}
+n = 100
+theta = 2
+```
+
+
+
+
+Question 3
+
+When n = 10
+```{r}
+set.seed(123)
+append = 0
+n = c(10,100,1000,10000)
+mean1 = 0
+meansqr1 = 0
+sumv = 0
+
+Xbars_n = NULL
+  for (j in 1:10000){
+    sum = 0
+    sumv = 0
+    for (k in 1:n[1]){
+      current = runif(1,0,1)
+      if (current< 0.5){
+        append = -1 
+      } else {
+        append = 1
+      }
+      sum = sum + append
+      sumv= sumv+ append^2
+    }
+    Xbars_n = c(Xbars_n,sum/n[1])
+    meansqr1 = meansqr1 + sumv
+    mean1 = mean1 + sum
+  }
+mean1 = mean1/(10000*n[1])
+meansqr1 = meansqr1/(10000*n[1])
+Xbars1= data.frame(Xbars_n)
+colnames(Xbars1)<-c("Xbars_1")
+head(Xbars1)
+```
+When n =100
+```{r}
+set.seed(123)
+mean2 = 0
+Xbars_n = NULL
+meansqr2 = 0
+sumv = 0
+
+  for (j in 1:10000){
+    sum = 0
+    sumv = 0
+    for (k in 1:n[2]){
+      current = runif(1,0,1)
+      if (current< 0.5){
+        append = -1 
+      } else {
+        append = 1
+      }
+      sum = sum + append
+      sumv= sumv+ append^2
+    }
+    Xbars_n = c(Xbars_n,sum/n[2])
+    meansqr2 = meansqr2 + sumv
+    mean2 = mean2 + sum
+  }
+mean2 = mean2/(10000*n[2])
+meansqr2 = meansqr2/(10000*n[2])
+Xbars2= data.frame(Xbars_n)
+colnames(Xbars2)<-c("Xbars_2")
+head(Xbars2)
+```
+
+When n = 1000
+```{r}
+set.seed(123)
+mean3 = 0
+Xbars_n = NULL
+meansqr3 = 0
+sumv = 0
+
+  for (j in 1:10000){
+    sum = 0
+    sumv = 0
+    for (k in 1:n[3]){
+      current = runif(1,0,1)
+      if (current< 0.5){
+        append = -1 
+      } else {
+        append = 1
+      }
+      sum = sum + append
+      sumv= sumv+ append^2
+    }
+    Xbars_n = c(Xbars_n,sum/n[3])
+    mean3 = mean3 + sum
+    meansqr3 = meansqr3 + sumv
+  }
+mean3 = mean3/(10000*n[3])
+meansqr3 = meansqr3/(10000*n[3])
+Xbars3= data.frame(Xbars_n)
+colnames(Xbars3)<-c("Xbars_3")
+head(Xbars3)
+```
+When n = 10000
+```{r}
+mean4 = 0
+set.seed(123)
+Xbars_n = NULL
+meansqr4 = 0
+sumv = 0
+
+  for (j in 1:10000){
+    sum = 0
+    sumv = 0
+    for (k in 1:n[4]){
+      current = runif(1,0,1)
+      if (current< 0.5){
+        append = -1 
+      } else {
+        append = 1
+      }
+      sum = sum + append
+      sumv= sumv+ append^2
+    }
+    mean4 = mean4 + sum
+    Xbars_n = c(Xbars_n,sum/n[4])
+    meansqr4 = meansqr4 + sumv
+  }
+meansqr4 = meansqr4/(10000*n[4])
+mean4 = mean4/(10000*n[4])
+Xbars4= data.frame(Xbars_n)
+colnames(Xbars4)<-c("Xbars_4")
+head(Xbars4)
+```
+a.)
+```{r}
+allXbars = data.frame(cbind(Xbars1,Xbars2, Xbars3,Xbars4))
+mu = cbind(mean1,mean2,mean3,mean4)
+allXbars[1,]
+
+plot(log10(n),allXbars[1,]-mu)
+```
+From the plot above we see that as n gets larger (n goes to infinity) the $\bar X^{(1)}-\mu$ converges to 0 thus showing WLLN.
+
+b.)
+
+```{r}
+
+plot(log10(n),colSums(data.frame(lapply(data.frame(abs(allXbars-mu)>0.5),as.numeric)))/10000)
+plot(log10(n),colSums(data.frame(lapply(data.frame(abs(allXbars-mu)>0.1),as.numeric)))/10000)
+plot(log10(n),colSums(data.frame(lapply(data.frame(abs(allXbars-mu)>0.05),as.numeric)))/10000)
+
+```
+First plot when $\epsilon = 0.5$ only for n = 10 is the value non-zero. As $\epsilon = 0.5$ gets smaller the bigger sample sizes start to have non-zero value of $\frac{1}{N}\sum_{i=1}^{N}1\{|\bar X_n^{(i)}-\mu|\}>\epsilon$
+So we can see that as the sample size gets larger ($log_{10}(n)$) the $\epsilon$ gets smaller thus showing the mean is getting closer to the average of the whole population as n increases. Which is the LLN.
+
+c.)
+
+```{r}
+sd = c(sqrt(meansqr1-mean1^2),sqrt(meansqr2-mean2^2),sqrt(meansqr3-mean3^2),sqrt(meansqr4-mean4^2))
+q = sqrt(n)*(allXbars-mu)/sd
+
+```
+
+```{r}
+qqnorm(q$Xbars_1)
+qqnorm(q$Xbars_3)
+qqnorm(q$Xbars_4)
+```
+
+```{r}
+hist(q$Xbars_1)
+hist(q$Xbars_3)
+hist(q$Xbars_4)
+```
+The above histogram and qqplot displays central limit theorem because as n increases the histogram becomes less skewed. In the qqplot the qqline becomes straighter as n increases. When the distribution is normal it will have a straight line. Thus showing CLT. In the histogram it becomes less right skewed as n increases and more centralized at 0. Which shows as n increases the distribution becomes more similar to the normal distribution thus CLT is displayed.
+
+d.)
+
+```{r}
+Y =data.frame(rnorm(10000,0,1))
+
+r = cbind(data.frame(lapply(data.frame(abs(q[1]-Y)>0.001),as.numeric)),data.frame(lapply(data.frame(abs(q[2]-Y)>0.001),as.numeric)),data.frame(lapply(data.frame(abs(q[3]-Y)>0.001),as.numeric)),data.frame(lapply(data.frame(abs(q[4]-Y)>0.001),as.numeric)))
+plot(log10(n),colSums(r)/10000)
+
+```
+We see that $\sqrt{n}(\bar X_n^i - \mu)/\sigma$ converges in distribution but does not converge in probability since $\frac{1}{N}\sum_{i=1}^N\{|\sqrt{n}(\bar X_n^i - \mu)/\sigma-Y_i|>\epsilon\}$
+
+Question 4
+a.)
+
+```{r, message=FALSE, warning=FALSE}
+library(bigmemory)
+library(biganalytics)
+```
+
+
+```{r}
+X <- read.big.matrix("datasets_all/ratings.dat", sep = ",", type = "integer",shared = TRUE, col.names = c("UserID", "ProfileID", "Rating"))
+head(X)
+summary(X)
+```
+
+```{r}
+load("datasets_all/users.Rdata")
+
+```
+
+
+To save time for knit i do not run below
+
+```{r eval = FALSE}
+N=3000000		# number of rating records
+Nu=135359		# maximum of UserID
+Np=220970		# maximum of ProfileID
+user.rat=rep(0,Nu)		# user.rat[i] denotes the sum of ratings given by user i
+user.num=rep(0,Nu)		# user.num[i] denotes the number of ratings given by user i
+profile.rat=rep(0,Np)		# profile.rat[i] denotes the sum of ratings given to profile i
+profile.num=rep(0,Np)		# user.rat[i] denotes the number of ratings given to profile i
+for (i in 1:N){	# In each iteration, we update the four arrays, i.e. user.rat, user.num, profile.rat, profile.num, using one rating record.
+	user.rat[X[i,'UserID']]=user.rat[X[i,'UserID']]+X[i,'Rating'] # The matrix X here comes from the file 'ratings.dat'
+	user.num[X[i,'UserID']]=user.num[X[i,'UserID']]+1
+	profile.rat[X[i,'ProfileID']]=profile.rat[X[i,'ProfileID']]+X[i,'Rating']
+	profile.num[X[i,'ProfileID']]=profile.num[X[i,'ProfileID']]+1
+	if (i %% 10000==0) print(i/10000)
+}
+user.ave=user.rat/user.num
+profile.ave=profile.rat/profile.num
+X1=big.matrix(nrow=nrow(X), ncol=ncol(X), type= "double", dimnames=list(NULL, c('UsrAveRat','PrfAveRat','Rat')))
+X1[,'Rat']=X[,'Rating']
+X1[,'UsrAveRat']=user.ave[X[,'UserID']]
+X1[,'PrfAveRat']=profile.ave[X[,'ProfileID']]		# X1 is the new data matrix we will work with in regression.
+
+```
+
+```{r eval = FALSE}
+weighted.rank <- function(ProfileID){
+  m = 4182
+  R = profile.rat[ProfileID]/user.rat[ProfileID]
+  v = user.rat[ProfileID]
+  C = sum(profile.rat)/N
+  wrank =(v/(v+m))*R+(m/(v+m))*C
+  return(wrank)
+}
+```
+
+```{r eval = FALSE}
+index = cbind(mwhich(X,"UserID",100,"eq"))
+weighted = lapply(X[index,2], weighted.rank)
+```
+
+```{r eval = FALSE}
+hist(matrix(unlist(weighted), ncol = 19))
+
+```
+b.)
+
+```{r eval = FALSE}
+cali = c(cbind(which(User$State == "CA" & User$Gender =="F")), which(User$State == "ca" & User$Gender =="F"), which(User$State == "Ca" & User$Gender =="F"), which(User$State == "california" & User$Gender =="F") )
+ny = c(cbind(which(User$State == "New York" & User$Gender =="M")), which(User$State == "ny" & User$Gender =="M"), which(User$State == "NY" & User$Gender == "M"), which(User$State == "new york" & User$Gender =="M"))
+
+all.ratings <- function(uID){
+  ind = cbind(mwhich(X,"UserID",uID,"eq"))
+  ranks = cbind(X[ind,3])
+  return(ranks)
+}
+
+nyrates = NULL
+for (i in 1:length(ny)){
+  nyrates = c(nyrates, all.ratings(ny[i]))
+}
+
+
+
+```
+
+```{r eval = FALSE}
+boxplot(nyrates)
+```
+
+```{r eval = FALSE}
+CArates = NULL
+for (i in 1:length(cali)){
+  CArates = c(CArates, all.ratings(cali[i]))
+}
+
+
+```
+
+```{r eval = FALSE}
+
+boxplot(CArates)
+```
+
+
+c.)
+```{r eval = FALSE}
+sub = cbind(sample(1:N-1000, 10))
+sub1 = sub.big.matrix(X1,sub[1],sub[1]+1000)
+
+
+model <- biglm.big.matrix(Rat ~ UsrAveRat +PrfAveRat, sub1)
+```
+
+
+
+
+
+```{r eval = FALSE}
+get.coefRsqr <- function(i){
+sub1 = sub.big.matrix(X1,i,i+1000)
+
+model <- biglm.big.matrix(Rat ~ UsrAveRat +PrfAveRat, sub1)
+summ1 = summary(model)
+intpt = summ1$mat[1]
+coUsr = summ1$mat[2]
+coPrf = summ1$mat[3]
+rsqr = summ1[4]
+results = cbind(intpt, coUsr, coPrf, rsqr)
+rownames(results) <- ""
+return (results)
+}
+sumResults = NULL
+set.seed(123)
+S = 1000
+for (j in 1:S){
+  rand = sample.int(N-1000, 1)
+  sumResults = rbind(sumResults, get.coefRsqr(rand))
+}
+head(sumResults)
+sample = data.frame(sumResults)
+totalInt = sum(unlist(sample$intpt))/S
+totalcoUsr = sum(unlist(sample$coUsr))/S
+totalcoPrf = sum(unlist(sample$coPrf))/S
+totalR = sum(unlist(sample$rsqr))/S
+
+totalInt 
+totalcoUsr
+totalcoPrf
+totalR 
+```
+
+
+So we have $R^2=0.63$ , $\theta_1 = -2.14$ ,  $\theta_2 = 0.45$, and $\theta_3 = 0.91$
+
+
+```{r eval = FALSE}
+modelAll <- biglm.big.matrix(formula = Rat ~ UsrAveRat +PrfAveRat, X1)
+summary(modelAll)
+summary(modelAll)[4]
+```
+
+
+
